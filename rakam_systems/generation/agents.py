@@ -11,6 +11,7 @@ from rakam_systems.core import NodeMetadata
 from rakam_systems.generation.llm import LLM
 from rakam_systems.vector_store import VectorStores
 
+from crewai import Agent as CrewAgent, Task as CrewTask, Crew, Process
 
 logging.basicConfig(level=logging.INFO)
 dotenv.load_dotenv()
@@ -265,3 +266,21 @@ class Agent(ABC):
         """
         action = self.choose_action(action_name)
         return action.execute(**kwargs)
+
+class MultiAgents:
+    def __init__(self, agents, tasks, process=Process.sequential):
+        """
+        Initialize a multi-agent system with CrewAI.
+
+        :param agents: List of CrewAI agents.
+        :param tasks: List of CrewAI tasks.
+        :param process: The process to follow (sequential, parallel, etc.).
+        """
+        self.crew = Crew(agents=agents, tasks=tasks, process=process)
+
+    def kickoff(self, inputs):
+        """
+        Kick off the CrewAI process with the given inputs.
+        """
+        result = self.crew.kickoff(inputs)
+        return result

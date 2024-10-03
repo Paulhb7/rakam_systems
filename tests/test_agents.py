@@ -5,8 +5,7 @@ from typing import Any
 from rakam_systems.core import Node, NodeMetadata
 from rakam_systems.generation.llm import LLM
 from rakam_systems.vector_store import VectorStores
-from rakam_systems.generation.agents import ClassifyQuery, RAGGeneration, Agent, Action
-
+from rakam_systems.generation.agents import ClassifyQuery, RAGGeneration, Agent, Action, MultiAgents
 
 # Simple LLM Implementation
 class SimpleLLM(LLM):
@@ -200,3 +199,81 @@ def test_agent_execute_action(simple_agent):
     result = simple_agent.execute_action("classify_query", query="test query")
 
     assert result is not None
+
+from crewai import Agent as CrewAgent, Task as CrewTask, Process
+from crewai import Crew  # Import Crew for orchestrating agents
+from multiagents_module import MultiAgents  # Assuming your MultiAgents class is in this module
+
+
+### Tests for MultiAgents
+
+@pytest.fixture
+def crew_agent_1():
+    return CrewAgent(
+        role='Query Classifier',
+        goal='Classify incoming queries into categories',
+        backstory='An expert in query classification.'
+    )
+
+
+@pytest.fixture
+def crew_agent_2():
+    return CrewAgent(
+        role='Prompt Generator',
+        goal='Generate precise prompts based on user queries.',
+        backstory='A master prompt engineer with a deep understanding of NLP.'
+    )
+
+
+@pytest.fixture
+def crew_task_1(crew_agent_1):
+    return CrewTask(
+        description='Classify the given query.',
+        expected_output='A classified query.',
+        agent=crew_agent_1
+    )
+
+
+@pytest.fixture
+def crew_task_2(crew_agent_2):
+    return CrewTask(
+        description='Generate a well-structured prompt for the LLM.',
+        expected_output='A prompt for the LLM.',
+        agent=crew_agent_2
+    )
+
+
+### Test for MultiAgents class initialization
+
+def test_multi_agents_initialization(crew_agent_1, crew_agent_2, crew_task_1, crew_task_2):
+    agents = [crew_agent_1, crew_agent_2]
+    tasks = [crew_task_1, crew_task_2]
+    
+    # Create MultiAgents system
+    multi_agents_system = MultiAgents(agents=agents, tasks=tasks, process=Process.sequential)
+
+    # Check that agents and tasks are correctly set
+    assert len(multi_agents_system.crew.agents) == 2
+    assert len(multi_agents_system.crew.tasks) == 2
+    assert isinstance(multi_agents_system.crew.process, Process)
+
+
+### Test for MultiAgents kickoff execution
+
+def test_multi_agents_kickoff(crew_agent_1, crew_agent_2, crew_task_1, crew_task_2):
+    agents = [crew_agent_1, crew_agent_2]
+    tasks = [crew_task_1, crew_task_2]
+
+    # Create MultiAgents system
+    multi_agents_system = MultiAgents(agents=agents, tasks=tasks, process=Process.sequential)
+
+    # Define input for the system
+    inputs = {'query': 'How to integrate AI in healthcare?'}
+
+    # Kickoff the process
+    result = multi_agents_system.kickoff(inputs=inputs)
+
+    # Ensure the result is valid (adjust based on expected result format)
+    assert result is not None
+    assert isinstance(result, dict) or isinstance(result, str)  # Assuming result could be dict or string
+
